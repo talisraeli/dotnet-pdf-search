@@ -42,7 +42,7 @@
         
            - If found in one page, the response `Content-Type` will be `image/png` with the page.
         
-           - If found in more than one page, the response `Content-Type` will be `application/json` with an object represented the pages as `image/png` in base64 encoding. (Provided a URL to decode base64 string to PNG).
+           - If found in more than one page, the response `Content-Type` will be `application/json` with an object which represents the pages as `image/png` in base64 encoding. (Provided a URL to decode base64 string to PNG).
 
 
 
