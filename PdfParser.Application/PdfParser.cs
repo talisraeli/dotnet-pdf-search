@@ -9,6 +9,10 @@ namespace PdfParser.Application;
 
 internal sealed class PdfParser : IPdfParser
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Interoperability",
+        "CA1416:Validate platform compatibility",
+        Justification = "Valid platform compatibility.")]
     public ParsedPdfPage[] SearchPdfForText(Stream pdf, string searchedText)
     {
         ParsedPdfResult? parsedPdf = GetParsedPdf(pdf, searchedText);
