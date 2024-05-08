@@ -133,7 +133,7 @@ internal sealed class PdfParser : IPdfParser
         PdfPageBuilder pageBuilder = builder.AddPage(document, page.Number);
         pageBuilder.SetStrokeColor(255, 0, 0);
 
-        foreach (var rectangle in rectangles)
+        foreach (PdfRectangle rectangle in rectangles)
         {
             pageBuilder.DrawLine(
                 rectangle.BottomLeft.Translate(0, -2),
