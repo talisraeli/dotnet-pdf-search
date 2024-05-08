@@ -4,8 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
-using UglyToad.PdfPig.DocumentLayoutAnalysis;
-using UglyToad.PdfPig.DocumentLayoutAnalysis.PageSegmenter;
 using UglyToad.PdfPig.Writer;
 
 namespace PdfParser.Application;
@@ -42,14 +40,22 @@ internal sealed class PdfParser : IPdfParser
     private static ParsedPdfResult? GetParsedPdf(Stream pdf, string searchedText)
     {
         using PdfDocument document = PdfDocument.Open(pdf);
-        SearchValues<string> searchValues = SearchValues.Create(
-            searchedText.Split(), StringComparison.OrdinalIgnoreCase);
         PdfDocumentBuilder builder = new();
         List<int> pageNumbers = [];
+        string[] searchedChars =
+            searchedText
+            .ToCharArray()
+            .Select(c => c.ToString())
+            .ToArray();
 
         foreach (Page page in document.GetPages())
         {
-            PdfRectangle[] rectangles = GetRectangles(page, searchedText, searchValues);
+            var rectangles =
+                GetMatchingWords(searchedChars, page.Letters)
+                .GroupBy(w => w.BoundingBox.Top)
+                .SelectMany(g => g)
+                .Select(w => w.BoundingBox)
+                .ToArray();
 
             if (rectangles.Length == 0)
             {
@@ -68,6 +74,54 @@ internal sealed class PdfParser : IPdfParser
         return new(builder.Build(), [.. pageNumbers]);
     }
 
+    private static Word[] GetMatchingWords(
+        string[] searchedChars,
+        IReadOnlyList<Letter> letters)
+    {
+        return [.. letters
+            .Aggregate((
+                lastIndex: -1,
+                letterList: new List<Letter>(searchedChars.Length),
+                wordList: new List<Word>()),
+                (acc, letter) =>
+                    AggregateLetters(searchedChars, acc, letter))
+            .wordList];
+    }
+
+    private static (int, List<Letter>, List<Word>) AggregateLetters(
+        string[] searchedChars,
+        (int lastIndex, List<Letter> letterList, List<Word> wordList) acc,
+        Letter letter)
+    {
+        if (!letter.Value.Equals(
+        searchedChars[acc.lastIndex + 1],
+        StringComparison.OrdinalIgnoreCase))
+        {
+            acc.lastIndex = -1;
+            acc.letterList.Clear();
+            return acc;
+        }
+
+        if (acc.letterList.LastOrDefault() != null &&
+            acc.letterList.Last().EndBaseLine.Y != letter.StartBaseLine.Y)
+        {
+            acc.wordList.Add(new(acc.letterList));
+            acc.letterList.Clear();
+        }
+
+        acc.lastIndex++;
+        acc.letterList.Add(letter);
+
+        if (acc.lastIndex == searchedChars.Length - 1)
+        {
+            acc.wordList.Add(new(acc.letterList));
+            acc.lastIndex = -1;
+            acc.letterList.Clear();
+        }
+
+        return acc;
+    }
+
     private static void AddUnderlines(
         PdfDocument document,
         PdfDocumentBuilder builder,
@@ -79,42 +133,11 @@ internal sealed class PdfParser : IPdfParser
 
         foreach (var rectangle in rectangles)
         {
-            pageBuilder.DrawLine(rectangle.BottomLeft.Translate(-2, -2), rectangle.BottomRight.Translate(2, -2), 2);
+            pageBuilder.DrawLine(
+                rectangle.BottomLeft.Translate(0, -2),
+                rectangle.BottomRight.Translate(0, -2),
+                2);
         }
-    }
-
-    private static PdfRectangle[] GetRectangles(
-        Page page,
-        string searchedText,
-        SearchValues<string> searchValues)
-    {
-        IEnumerable<Word> words = page.GetWords();
-        IReadOnlyList<TextBlock> blocks = DocstrumBoundingBoxes.Instance.GetBlocks(words);
-
-        return blocks
-            .Where(b => b.Text
-                .Contains(searchedText, StringComparison.OrdinalIgnoreCase))
-            .SelectMany(tb => tb.TextLines)
-            .SelectMany(tl => tl.Words)
-            .Select(w => w.Text
-                .SplitHyphens()
-                .Select(h => h.Length)
-                .Aggregate(
-                    (List: new List<Word>(), LastIndex: 0),
-                    (acc, i) => {
-                        acc.List.Add(
-                            new(w.Letters
-                                .Skip(acc.LastIndex)
-                                .Take(i)
-                                .ToList()));
-                        acc.LastIndex += i + 1;
-                        return acc;
-                    }))
-            .SelectMany(a => a.List)
-            .Where(w => searchValues
-                .Contains(w.Text.RemoveSymbols()))
-            .Select(w => w.BoundingBox)
-            .ToArray();
     }
 
     private sealed record ParsedPdfResult(
