@@ -1,0 +1,6 @@
+@PdfParser.WebApi_HostAddress = http://localhost:5242
+
+GET {{PdfParser.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

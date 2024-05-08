@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="PdfParser.Application\PdfParser.Application.csproj" />
+  <Project Path="PdfParser.WebApi\PdfParser.WebApi.csproj" />
+</Solution>
