@@ -14,12 +14,13 @@ public static class WebApplicationExtensions
     }
 
     private static IResult Handle(
-        [FromForm] SearchPdfRequest request,
+        [FromForm] IFormFile pdf,
+        [FromForm] string searchedText,
         IPdfParser pdfParser)
     {
         ParsedPdfPage[] pages = pdfParser.SearchPdfForText(
-            request.Pdf.OpenReadStream(),
-            request.SearchedText);
+            pdf.OpenReadStream(),
+            searchedText);
 
         if (pages.Length == 0)
         {
