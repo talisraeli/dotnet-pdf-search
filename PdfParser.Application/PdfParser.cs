@@ -1,6 +1,5 @@
 ﻿using SkiaSharp;
 using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using UglyToad.PdfPig.Core;
@@ -10,7 +9,6 @@ namespace PdfParser.Application;
 
 internal sealed class PdfParser : IPdfParser
 {
-    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "Supports the relevant platforms")]
     public ParsedPdfPage[] SearchPdfForText(Stream pdf, string searchedText)
     {
         ParsedPdfResult? parsedPdf = GetParsedPdf(pdf, searchedText);
